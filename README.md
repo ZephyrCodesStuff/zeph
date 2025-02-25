@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌙 zeph
 
-## Getting Started
+A fancy personal website, with a minimalistic blog built with NextJS, featuring:
+- 3D homepage, with a modern design, pretty info and animations
+- Markdown blog posts with syntax highlighting
+- Light/dark mode with theme persistence
+- Responsive design with Tailwind CSS
+- Monospace aesthetic with the Geist font
 
-First, run the development server:
+## Tech Stack
+
+- **Framework**: NextJS (with App Router), ThreeJS
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS with Typography plugin
+- **Content**: Markdown with remark
+- **Deployment**: Docker
+
+## Development
+
+First, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then, run the development server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) to see the result.
 
-## Learn More
+## Blog Posts
 
-To learn more about Next.js, take a look at the following resources:
+Blog posts are written in Markdown and stored in the `posts` directory. Each post should include frontmatter:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```markdown
+---
+title: "Post Title"
+date: "YYYY-MM-DD"
+excerpt: "Brief description of the post"
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Content goes here...
+```
 
-## Deploy on Vercel
+## Docker
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Build and run using Docker:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# Build the image
+docker build -t zeph .
+
+# Run the container
+docker run -p 3000:3000 zeph
+```
+
+Or use Docker Compose:
+
+```bash
+docker-compose up
+```
+
+## Project Structure
+
+```
+.
+├── src/
+│   ├── app/                 # Next.js app router
+│   ├── components/          # React components
+│   └── lib/                 # Utility functions
+├── posts/                   # Markdown blog posts
+├── public/                  # Static assets
+└── docker-compose.yml       # Docker configuration
+```
+
+## License
+
+GNU General Public License (Version 3) - feel free to use this code as inspiration for your own projects!

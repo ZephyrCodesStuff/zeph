@@ -1,0 +1,9 @@
+services:
+  web:
+    container_name: zeph
+    image: ghcr.io/zephyrcodesstuff/zeph:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000

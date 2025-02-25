@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --text-primary: #333333;
+  --text-secondary: #555555;
+  --separator-color: #777777;
+  --selection-background: #666666;
+  --selection-text: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --text-primary: #cfcfcf;
+  --text-secondary: #666666;
+  --separator-color: #999999;
+  --selection-background: #666666;
+  --selection-text: #cfcfcf;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Ubuntu Mono', monospace;
+}
+
+/* Custom selection styles */
+::selection {
+  background: var(--selection-background);
+  color: var(--selection-text);
+}
+
+::-moz-selection {
+  background: var(--selection-background);
+  color: var(--selection-text);
+}

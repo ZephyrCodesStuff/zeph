@@ -1,101 +1,136 @@
-import Image from "next/image";
+"use client";
+
+import { Canvas, extend } from "@react-three/fiber";
+import { useState, useEffect } from "react";
+
+import * as THREE from "three";
+import { Vector3 } from "three";
+import { UnrealBloomPass } from "three/examples/jsm/Addons.js";
+
+import { Hotspot, hotspots, Hotspots } from "./components/hotspots";
+import { OilPaintingShader } from "./components/shader";
+import { FloatingCamera } from "./components/camera";
+import { ControlBar } from "./components/controlBar";
+import { LightShaft } from "./components/effects/light";
+import { AtmosphericParticles } from "./components/effects/particles";
+import { SocialBar } from "./components/socialBar";
+import { MobileHotspotSelector } from "./components/mobileHotspotSelector";
+import { OrientationWarning } from "./components/orientationWarning";
+import { BASE_CAMERA_POSITION, BASE_LOOK_AT, BASE_ZOOM, MOBILE_ZOOM } from "./lib/constants";
+
+const Background = ({
+  onHotspotClick,
+  selectedHotspot,
+  dimAmount,
+}: {
+  onHotspotClick: (hotspot: Hotspot) => void;
+  selectedHotspot: Hotspot | null;
+  dimAmount: number;
+}) => {
+  return (
+    <>
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[5, 5, 5]} intensity={0.8} />
+      <OilPaintingShader dimAmount={dimAmount} />
+      <Hotspots
+        onHotspotClick={onHotspotClick}
+        selectedHotspot={selectedHotspot}
+      />
+      <LightShaft />
+      <AtmosphericParticles />
+    </>
+  );
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  // Extend R3F to recognize shaderMaterial
+  extend({
+    ShaderMaterial: THREE.ShaderMaterial,
+    UnrealBloomPass: UnrealBloomPass,
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const [targetPosition, setTargetPosition] = useState(BASE_CAMERA_POSITION);
+  const [targetLookAt, setTargetLookAt] = useState(BASE_LOOK_AT);
+  const [targetZoom, setTargetZoom] = useState(BASE_ZOOM);
+  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
+  const [dimAmount, setDimAmount] = useState(0);
+
+  // Track if we're on mobile
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleHotspotClick = (hotspot: Hotspot) => {
+    if (selectedHotspot?.id === hotspot.id) {
+      handleOverviewClick();
+      return;
+    }
+
+    setTargetPosition(new Vector3(...hotspot.cameraPosition));
+    setTargetLookAt(new Vector3(...hotspot.lookAt));
+    // Use different zoom level for mobile
+    setTargetZoom(isMobile ? MOBILE_ZOOM : (hotspot.cameraPosition[2] > 2 ? 1 : 0.5));
+    setSelectedHotspot(hotspot);
+    setDimAmount(0);
+  };
+
+  const handleOverviewClick = () => {
+    setTargetPosition(BASE_CAMERA_POSITION);
+    setTargetLookAt(BASE_LOOK_AT);
+    setTargetZoom(BASE_ZOOM);
+    setSelectedHotspot(null);
+    setDimAmount(0.5);
+  };
+
+  // Adjust zoom steps for mobile
+  const handleZoomIn = () => {
+    setTargetZoom((prev) => Math.max(isMobile ? 0.5 : 0.25, prev - (isMobile ? 0.1 : 0.25)));
+  };
+
+  const handleZoomOut = () => {
+    setTargetZoom((prev) => Math.min(1, prev + (isMobile ? 0.1 : 0.25)));
+  };
+
+  return (
+    <>
+      <OrientationWarning />
+      <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+        <Background
+          onHotspotClick={handleHotspotClick}
+          selectedHotspot={selectedHotspot}
+          dimAmount={dimAmount}
+        />
+        <FloatingCamera
+          targetPosition={targetPosition}
+          targetLookAt={targetLookAt}
+          targetZoom={targetZoom}
+          selectedHotspot={selectedHotspot}
+          setTargetZoom={setTargetZoom}
+          setTargetPosition={setTargetPosition}
+          setTargetLookAt={setTargetLookAt}
+          setSelectedHotspot={setSelectedHotspot}
+          setDimAmount={setDimAmount}
+        />
+      </Canvas>
+      <ControlBar
+        onOverviewClick={handleOverviewClick}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+      />
+      <SocialBar />
+      <MobileHotspotSelector 
+        hotspots={hotspots} 
+        selectedHotspot={selectedHotspot}
+        onHotspotClick={handleHotspotClick}
+      />
+    </>
   );
 }
