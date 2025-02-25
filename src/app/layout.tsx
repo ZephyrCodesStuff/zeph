@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="dark">
       <body
-        className={`${roboto.variable} w-screen h-screen overflow-hidden antialiased`}
+        className={`${roboto.variable} w-screen h-screen antialiased`}
       >
         {children}
       </body>
