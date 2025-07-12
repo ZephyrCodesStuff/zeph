@@ -6,7 +6,7 @@ excerpt: "Write-up for the reverse engineering challenge I've solved"
 
 # Androbro Challenge Writeup
 
-**Time spent:** 9 hours — worth every minute! 💀
+**Time spent:** 9 hours 💀
 
 ---
 
