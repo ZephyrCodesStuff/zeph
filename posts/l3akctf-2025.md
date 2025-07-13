@@ -14,32 +14,49 @@ excerpt: "Write-up for the reverse engineering challenge I've solved"
 
 This challenge involved reverse engineering an Android APK protected by a native C++ library with layered cryptographic techniques. The goal was to decrypt an encrypted Dalvik bytecode and ultimately recover the AES-encrypted flag.
 
+### Categories
+
+- Mobile (Android) and native reverse engineering (C++)
+- Cryptography
+- Static analysis (IDA, jadx)
+  - Alternative: dynamic analysis with Frida (not used in this writeup)
+
+### Tools
+
+- [jadx](https://github.com/skylot/jadx) - for decompiling the APK and extracting the native library
+- [IDA Free](https://hex-rays.com/ida-free) - for disassembling the native library
+- [APKLab](https://github.com/APKLab/APKLab) - for unpacking the APK, modifying and repacking it
+
 ---
 
 ## Step 1: Unpack and Decompile the APK
 
-- Use tools like [`jadx`](https://github.com/skylot/jadx) to decompile the APK.
+- Use APKLab or jadx to decompile the APK.
 - Extract the native library from:  
   `lib/x86_64/libragnar.so`  
   > *Note:* The x86_64 version disassembles more reliably than other architectures.
 
+![libragnar.so in jadx](/posts/l3akctf-2025/libragnar.png)
+
 ---
 
-## Step 2: Analyze the Native Library with IDA Pro
+## Step 2: Analyze the Native Library with IDA
 
-- Load `libragnar.so` into **IDA Pro** for disassembly.  
-- Other disassemblers produced inconsistent or corrupted output, so IDA Pro was the best choice.
+- Load `libragnar.so` into **IDA** for disassembly. 
+- Other disassemblers produced inconsistent or corrupted output, so IDA was the best choice.
 
 ---
 
 ## Step 3: Locate Key JNI Functions
 
 - Examine the `JNI_OnLoad` export to discover JNI interface functions.
-- Identify a critical function at address `0x0049810` with the signature:  
+- Identify a critical function at address `0x68ADE` with the signature:  
   ```c
   _JNIEnv *jenv, __int64 a2, __int64 a3, __int64 a4
   ```
 - This function drives the core cryptographic workflow.
+
+![Interesting function](/posts/l3akctf-2025/jni-rev.png)
 
 ---
 
@@ -48,23 +65,31 @@ This challenge involved reverse engineering an Android APK protected by a native
 Key operations performed by this function:
 
 1. **Extract the Package Name**  
-   The app’s package name is retrieved: `com.defensys.androbro`
+  The app’s package name is retrieved: `com.defensys.androbro`
 
 2. **Compute SHA256 Using Java APIs**  
+
 - The package name is converted into a Java string.  
 - A SHA256 digest is computed via Java’s `MessageDigest` class.
 
 3. **Generate RC4 Key and Input**  
+
 - The SHA256 digest is converted to its **hexadecimal ASCII** string representation.  
+
 - This hex string serves as the **RC4 key**.  
 - The **input** to the RC4 cipher is the ASCII bytes of the package name.
 
 4. **Decrypt an Encrypted Asset**  
+
 - The RC4 output is used as an XOR key to decrypt the file:  
-  ```
+
+  ```raw
   assets/E/M/O/H/G/CMVASFLW.EXE
   ```
+
 - This decrypted file is actually a Dalvik Executable (DEX).
+
+![Decrypted Dalvik library](/posts/l3akctf-2025/decrypted-dex.png)
 
 ---
 
@@ -74,6 +99,8 @@ Key operations performed by this function:
 - Locate the class: `defpackage.FlagChecker`
 - Focus on the method: `FlagChecker.checkFlag`
 - This method contains an AES-encrypted flag and the corresponding parameters.
+
+![Flag checking code](/posts/l3akctf-2025/flag-checker.png)
 
 ---
 
@@ -86,22 +113,28 @@ Key operations performed by this function:
 ---
 
 ## Final Flag
+
 `L3AK{_Using_native_cpp__is_not_really_hard_xd_31412314}`
+
 - Required XOR key for `CMVASFLW.EXE` (the Dalvik class): `6a209693a9acaf10dcd2e425bab62a5e48698b7fc3`
 
 ## Notes
+
 The challenge authors recommend solving this challenge with Frida: a dynamic instrumentation toolkit for Android. However, I've had multiple issues getting Frida to work or to capture anything. The general idea would've been:
-- Hook the library, particularly the `strcmp` functions, and print the arguments.
+
+- Hooking the library, particularly the `strcmp` functions, and printing the arguments.
 - The app would calculate the correct XOR key and compare it to your input.
-- Use `adb` to send a Broadcast Intent to trigger the flag check (namely, `THE_TRIGER` (with the misspelling) and `THE_UNLOCKER`), so the app would calculate the XOR key and compare it to your input (taken from the Intent's extra argument `key`)
+- Using `adb` to send a Broadcast Intent to trigger the flag check (namely, `THE_TRIGER` (with the misspelling) and `THE_UNLOCKER`), so the app would calculate the XOR key and compare it to the input (taken from the Intent's extra argument `key`)
 
 I've chosen to solve the challenge statically with IDA (The Interactive Disassembler) instead, because:
+
 1. It's simply more fun (I enjoy static analysis much more).
 2. Frida did not want to work (I've only got a jailed Android device, which I refuse to root), and `frida-gadget` was severely hindered.
 3. The app seemed to completely ignore any and all messages I'd send via `adb shell am broadcast`.
 4. The cryptography isn't complicated enough to force me to use other dynamic tools.
 
 Additionally, IDA was the only disassembler that could handle the native library without issues, while others produced corrupted or incomplete outputs.
+
 - BinaryNinja's output was extremely messy.
 - Ghidra's output was much cleaner, but unreliable; it struggled to identify the `xorbuffers` function's arguments, making it appear as if it simply ignored one of the two. This made it impossible to figure what was being fed into RC4.
 - It is to be noted that I used the `armv8` version of the lib for the first two, but switched to the `x86_64` version for IDA, which might've been what got IDA to work better with it.
